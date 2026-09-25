@@ -224,13 +224,16 @@ Verificaciones que conviene repetir tras cualquier reentrenamiento:
 
 ## 8. Notas de operación
 
-- **Modelos y datos** en `/mnt/training_data/detector-ia`; el modelo anterior a la
+- **Modelos y datos** en la ruta que indique `DETECTOR_IA_HOME`; el modelo anterior a la
   incorporación de Claude está en `models/mdeberta-detector-v1-sin-claude`.
+- **El modelo publicado** está en el repositorio privado `ttech12/Ai-detector` de Hugging
+  Face, junto con `calibration.json` y su ficha. Privado a propósito: un modelo público
+  se puede sondear hasta encontrar cómo evadirlo.
 - **mDeBERTa se carga con `dtype=torch.float32`**: el checkpoint viene en fp16 y con esos
   pesos AdamW produce NaN en el primer paso.
 - **`scripts/common.py` fuerza IPv4.** El IPv6 de esta red no enruta y cada conexión de
   `requests` tardaba ~40 s.
-- **Clave de OpenAlex** en `~/.config/openalex.env` (variable `OPENALEX_API_KEY`).
+- **Clave de OpenAlex** en la variable `OPENALEX_API_KEY` (aquí: `~/.config/openalex.env`).
 - **Corpus externos** en `/mnt/training_data/detector-ia/externo`: PERSUADE 2.0 y CATyPI,
   ambos CC BY-NC-SA 4.0 (uso no comercial, no redistribuir).
 - **Los informes de los subagentes que escriben corpus no son fiables:** cuatro de siete

@@ -38,7 +38,7 @@ No se publica, y hay que generarlo o conseguirlo por separado:
 
 | | Dónde vive | Cómo obtenerlo |
 |---|---|---|
-| Modelo entrenado y `calibration.json` | `$DETECTOR_IA_HOME/models` | `scripts/train_classifier.py` + `scripts/calibrate.py` |
+| Modelo entrenado y `calibration.json` | `$DETECTOR_IA_HOME/models` | repositorio privado en Hugging Face (`ttech12/Ai-detector`), o reentrenar con `scripts/train_classifier.py` + `scripts/calibrate.py` |
 | Corpus (artículos, tesis, textos de IA) | `$DETECTOR_IA_HOME/corpus` | `scripts/collect_openalex.py` y siguientes |
 | Corpus externos (PERSUADE, CATyPI) | `$DETECTOR_IA_HOME/externo` | de sus autores; licencia CC BY-NC-SA, no redistribuibles |
 | Trabajos analizados | nunca salen de la máquina | — |
@@ -53,6 +53,18 @@ python3 -m venv .venv
 export DETECTOR_IA_HOME=/ruta/con/espacio/detector-ia   # modelos y corpus (decenas de GB)
 export OPENALEX_API_KEY=...                             # solo para construir el corpus
 ```
+
+El modelo entrenado está en un repositorio **privado** de Hugging Face. Con acceso y
+sesión iniciada (`hf auth login`):
+
+```bash
+.venv/bin/hf download ttech12/Ai-detector \
+  --local-dir "$DETECTOR_IA_HOME/models/mdeberta-detector"
+mv "$DETECTOR_IA_HOME/models/mdeberta-detector/calibration.json" "$DETECTOR_IA_HOME/models/"
+```
+
+Se mantiene privado a propósito: si cualquiera puede descargarlo, también puede probar
+textos contra él hasta encontrar cómo evadirlo.
 
 ## Uso
 
