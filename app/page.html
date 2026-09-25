@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detector local de texto con IA</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --texto: #1b1d22; --suave: #5c626e; --linea: #e3e6ea;
+    --ia: #b3261e; --ia-bg: #fdecea; --gris: #8a6400; --gris-bg: #fff6df;
+    --humano: #1f6f43; --humano-bg: #eaf6ef; --acento: #2a4d8f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a; --card: #1d2026; --texto: #e9eaee; --suave: #a2a8b4; --linea: #2c313a;
+      --ia: #ff8a80; --ia-bg: #3a1f1d; --gris: #f0c552; --gris-bg: #3a3120;
+      --humano: #85d6a6; --humano-bg: #1c3227; --acento: #8fb0ef;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 16px 64px; background: var(--bg); color: var(--texto);
+         font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--suave); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--linea); border-radius: 10px;
+          padding: 20px; margin-bottom: 18px; }
+  label { display: block; font-weight: 600; margin-bottom: 8px; }
+  textarea { width: 100%; padding: 12px; border: 1px solid var(--linea); border-radius: 8px;
+             background: var(--bg); color: var(--texto); font: inherit; resize: vertical; }
+  .sep { color: var(--suave); margin: 16px 0 8px; }
+  button, .boton { display: inline-block; margin-top: 16px; padding: 10px 20px; border: 0;
+                   border-radius: 8px; background: var(--acento); color: #fff; font: inherit;
+                   font-weight: 600; cursor: pointer; text-decoration: none; }
+  .acciones { display: flex; gap: 12px; }
+  .error { color: var(--ia); font-weight: 600; }
+  .badge { display: inline-block; padding: 6px 14px; border-radius: 999px; font-weight: 700; }
+  .b-alto { background: var(--ia-bg); color: var(--ia); }
+  .b-gris { background: var(--gris-bg); color: var(--gris); }
+  .b-bajo { background: var(--humano-bg); color: var(--humano); }
+  .cifras { display: flex; flex-wrap: wrap; gap: 28px; margin: 20px 0 4px; }
+  .cifras div { display: flex; flex-direction: column; }
+  .cifras strong { font-size: 26px; }
+  .cifras span { color: var(--suave); font-size: 13px; }
+  .fuente { color: var(--suave); font-size: 13px; margin: 8px 0 0; }
+  .leyenda { font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .leyenda span { padding: 2px 8px; border-radius: 4px; }
+  .texto { line-height: 1.9; }
+  .m-ia { background: var(--ia-bg); color: var(--ia); border-radius: 4px; padding: 2px 3px; }
+  .m-gris { background: var(--gris-bg); color: var(--gris); border-radius: 4px; padding: 2px 3px; }
+  .m-humano { border-radius: 4px; padding: 2px 3px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--linea); }
+  .v-ia { color: var(--ia); font-weight: 600; }
+  .v-gris { color: var(--gris); font-weight: 600; }
+  .v-humano { color: var(--humano); }
+  summary { cursor: pointer; font-weight: 600; }
+  .aviso { border-left: 4px solid var(--acento); background: var(--card); padding: 14px 18px;
+           border-radius: 0 8px 8px 0; margin-bottom: 22px; color: var(--suave); font-size: 14px; }
+  @media print { body { background: #fff; } .acciones, form { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Detector local de texto con IA</h1>
+  <p class="sub">Análisis local. El documento no sale de esta computadora.</p>
+
+  <p class="aviso"><strong>Esto es un indicio, no una prueba.</strong> Ningún detector
+  acierta siempre. El umbral está ajustado para marcar a lo sumo 1 de cada 100 textos
+  humanos, así que sobre 300 trabajos se esperan unos 3 señalados por error. Un texto
+  que el alumno escribió y luego pulió con IA se detecta solo en la mitad de los casos. Úsalo para abrir
+  una conversación con el alumno, nunca como base de una sanción.</p>
+
+  <!--CONTENT-->
+</main>
+</body>
+</html>

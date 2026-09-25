@@ -1,0 +1,21 @@
+# Detector: inferencia y app
+torch>=2.5            # instalar con el índice CUDA que corresponda a tu GPU
+transformers>=5.0
+tiktoken
+protobuf
+sentencepiece
+accelerate
+fastapi
+uvicorn[standard]
+python-multipart
+python-docx
+pymupdf
+jinja2
+
+# Construcción del corpus y evaluación
+requests
+numpy
+pandas
+scikit-learn
+lingua-language-detector
+gdown

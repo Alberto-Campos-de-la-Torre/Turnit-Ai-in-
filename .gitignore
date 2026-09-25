@@ -1,0 +1,19 @@
+# Entorno
+.venv/
+__pycache__/
+*.pyc
+
+# Datos: corpus, material descargado de terceros y trabajos analizados.
+# Nada de esto se publica (pesa GB y es material con licencia ajena).
+data/
+logs/
+
+# Modelos entrenados y calibración (viven en DETECTOR_IA_HOME)
+models/
+*.safetensors
+*.bin
+*.gguf
+
+# Claves y configuración local
+*.env
+.env
