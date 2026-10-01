@@ -23,8 +23,9 @@ el corpus, los resultados, los límites y cómo mantenerlo cuando salga un model
   6º a 12º, EE.UU., inglés): 0% marcado como IA, 0,4% en zona gris. 973 fragmentos de
   250 tesis en español que no están en el corpus: 0,2% IA, 2,3% gris. CATyPI (tesis de
   computación en español, INAOE): 1,1% IA, 2,7% gris sobre 182 secciones juzgadas.
-- **Ataques (hechos):** manipular la longitud de las frases no evade (100% → 99.3%);
-  parafrasear el texto de IA dos veces tampoco (100% → 99.2%).
+- **Ataques (hechos):** manipular la longitud de las frases no evade (100% → 99.3%) y
+  parafrasear con un modelo conocido tampoco (100% → 99.2%), pero **DIPPER-XXL, hecho
+  para evadir detectores, baja la detección al 5%** con dos pasadas (inglés, 119 textos).
 - **Variabilidad entre versiones (hecha):** mismos encargos con Opus 5, Sonnet 5 y
   Haiku 4.5. Escritura desde cero: 100% detectada en las tres. Texto pulido: 57% (Opus),
   63% (Sonnet), 100% (Haiku). Entrenado solo con Opus, generaliza a las otras dos.

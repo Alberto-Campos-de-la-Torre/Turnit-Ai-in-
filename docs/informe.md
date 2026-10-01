@@ -154,25 +154,29 @@ variados: una diferencia pequeña, no un sesgo sistemático.
 **Y no se le engaña manipulando las frases.** Uniendo y partiendo frases en 300 textos de
 IA, la variación subió de 0.252 a 0.290 y la detección solo bajó del 100% al 99.3%.
 
-**El parafraseo tampoco evade.** Se reescribieron 240 textos de IA con un LLM (una y dos
-pasadas), que es lo que hacen QuillBot y similares:
+**El parafraseo con un modelo conocido no evade… pero DIPPER sí.** Dos pruebas, y la
+diferencia entre ellas es la lección:
 
-| Versión | Detectado | Conserva del original |
-|---|---|---|
-| Original | 100% | 1.00 |
-| Una pasada de parafraseo | 100% | 0.40 |
-| Dos pasadas | 99.2% | 0.45 |
+| Parafraseador | Original | Una pasada | Dos pasadas |
+|---|---|---|---|
+| gemma3:12b (uno de los generadores del entrenamiento), 240 textos es+en | 100% | 100% | 99.2% |
+| **DIPPER-XXL** (11B, no visto en entrenamiento), 119 textos en inglés | 100% | **27.7%** | **5.0%** |
 
-Es el ataque que tumbó a los detectores de 2023 (Krishna et al., NeurIPS 2023: DetectGPT
-cayó del 70.3% al 4.6% con DIPPER). Aquí no funciona, y la razón es simple: parafrasear
-texto de IA con una IA deja texto de IA. Lo que baja la detección no es reescribir el
-texto, sino que **el contenido sea humano**: cuando la IA reescribe un texto de un
-alumno, la detección cae al 57-63%, y menos aún cuanto más conserva del original.
+DIPPER (Krishna et al., NeurIPS 2023) está entrenado expresamente para evadir detectores,
+y aquí lo consigue: con dos pasadas la detección cae al 5%, la probabilidad que asigna el
+clasificador baja a 0.0000 y el texto conserva el 81% de su extensión y se sigue leyendo
+bien. No es un ataque que degrade el trabajo: es utilizable.
 
-Advertencia sobre esta prueba: el parafraseador usado (gemma3:12b) es uno de los
-generadores del entrenamiento, así que su estilo le resulta familiar al clasificador. La
-prueba limpia sería DIPPER, el parafraseador de esa literatura, que no cabe en disco
-(45 GB frente a 39 GB libres).
+El ataque funciona contra todos los generadores por igual (de 100% a entre 0% y 14%), así
+que no es un problema de un modelo concreto. Y explica por qué la prueba con gemma3 salió
+tan bien: ese parafraseador estaba en el entrenamiento y su estilo le resultaba familiar
+al clasificador. **Medir ataques con herramientas que el modelo ya conoce da una falsa
+sensación de robustez.**
+
+Dos matices: DIPPER solo funciona en inglés, así que el flanco en español queda sin medir
+con un ataque de este nivel; y la defensa que propone ese artículo (comparar contra una
+base de datos de generaciones) no sirve aquí, porque exige tener los registros de la API
+del modelo que escribió el texto.
 
 Sobre Turnitin en concreto: su documentación pública no describe el uso de esas métricas,
 y el estudio comparativo revisado por pares más citado (Weber-Wulff et al., 2023,
@@ -186,6 +190,9 @@ posicionamiento, no de fuentes primarias.
 ## 6. Límites conocidos
 
 - **El texto pulido con IA se escapa la mitad de las veces.** Es el uso más común.
+- **Un parafraseador diseñado para evadir (DIPPER) reduce la detección al 5%** en inglés,
+  con dos pasadas y sin estropear el texto. Es el agujero más grande que tiene la
+  herramienta hoy.
 - **Ningún texto de alumnos reales usando Claude desde el chat.** Todo el corpus de IA lo
   escribieron agentes con instrucciones detalladas; un alumno escribe dos líneas de
   prompt y retoca el resultado.
