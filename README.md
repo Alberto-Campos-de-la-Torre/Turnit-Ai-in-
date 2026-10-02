@@ -35,6 +35,29 @@ el corpus, los resultados, los límites y cómo mantenerlo cuando salga un model
   Haiku 4.5. Escritura desde cero: 100% detectada en las tres. Texto pulido: 57% (Opus),
   63% (Sonnet), 100% (Haiku). Entrenado solo con Opus, generaliza a las otras dos.
 
+## Servidor MCP
+
+Expone el análisis como herramientas para un asistente (Claude Code y cualquier otro
+cliente MCP). **No carga el modelo**: habla con la app local, que ya lo tiene en memoria,
+así la GPU se usa una sola vez.
+
+```bash
+./run_app.sh &                                  # la app debe estar corriendo
+claude mcp add detector-ia -- ./.venv/bin/python -m mcp_server.server
+```
+
+El repositorio ya trae `.mcp.json`, así que al abrir Claude Code en esta carpeta aparece
+solo. Herramientas: `analizar_texto`, `analizar_archivo` (.pdf/.docx/.txt) y `estado`.
+Cada respuesta incluye el porcentaje marcado, los fragmentos a reescribir y la nota de que
+es una señal de revisión, no una prueba.
+
+También hay API JSON directa, por si se quiere usar sin MCP:
+
+```bash
+curl -s localhost:8000/api/analizar -H 'content-type: application/json' \
+     -d '{"ruta": "~/trabajo.docx"}' | jq .
+```
+
 ## Qué incluye este repositorio, y qué no
 
 Se publica **solo el código**: el detector, la app y todo el flujo de construcción y
@@ -44,7 +67,7 @@ No se publica, y hay que generarlo o conseguirlo por separado:
 
 | | Dónde vive | Cómo obtenerlo |
 |---|---|---|
-| Modelo entrenado y `calibration.json` | `$DETECTOR_IA_HOME/models` | repositorio privado en Hugging Face (`ttech12/Ai-detector`), o reentrenar con `scripts/train_classifier.py` + `scripts/calibrate.py` |
+| Modelo entrenado y `calibration.json` | `$DETECTOR_IA_HOME/models` | repositorios privados en Hugging Face (ver abajo), o reentrenar con `scripts/train_classifier.py` + `scripts/calibrate.py` |
 | Corpus (artículos, tesis, textos de IA) | `$DETECTOR_IA_HOME/corpus` | `scripts/collect_openalex.py` y siguientes |
 | Corpus externos (PERSUADE, CATyPI) | `$DETECTOR_IA_HOME/externo` | de sus autores; licencia CC BY-NC-SA, no redistribuibles |
 | Trabajos analizados | nunca salen de la máquina | — |
@@ -60,8 +83,17 @@ export DETECTOR_IA_HOME=/ruta/con/espacio/detector-ia   # modelos y corpus (dece
 export OPENALEX_API_KEY=...                             # solo para construir el corpus
 ```
 
-El modelo entrenado está en un repositorio **privado** de Hugging Face. Con acceso y
-sesión iniciada (`hf auth login`):
+Hay **dos versiones** del modelo, ambas en repositorios privados de Hugging Face:
+
+| | `ttech12/Ai-detector` (revisión) | `ttech12/Ai-detector-equilibrado` |
+|---|---|---|
+| IA parafraseada con DIPPER | **90.8%** | 5% |
+| Texto humano reformulado con una herramienta | 40% IA + 30% gris | **0%** |
+| Texto humano pulido con IA | 35% | 62% |
+| Cuándo usarla | revisar un texto propio antes de enviarlo | cuando el resultado tenga consecuencias para alguien |
+
+La de revisión aprendió a reconocer *que un texto pasó por un parafraseador*, no solo que
+el contenido sea de máquina. Con acceso y sesión iniciada (`hf auth login`):
 
 ```bash
 .venv/bin/hf download ttech12/Ai-detector \

@@ -135,6 +135,41 @@ def render_result(a, source: str) -> str:
       </div>""")
 
 
+@app.post("/api/analizar")
+async def api_analizar(payload: dict):
+    """API JSON para clientes como el servidor MCP. {"texto": "..."} o {"ruta": "..."}."""
+    texto = (payload.get("texto") or "").strip()
+    fuente = "texto"
+    if not texto and payload.get("ruta"):
+        ruta = Path(payload["ruta"]).expanduser()
+        if not ruta.is_file():
+            return {"error": f"No existe el archivo: {ruta}"}
+        try:
+            texto = extract_text(ruta.name, ruta.read_bytes())
+        except ValueError as e:
+            return {"error": str(e)}
+        fuente = str(ruta)
+    if not texto:
+        return {"error": "Hace falta 'texto' o 'ruta'."}
+
+    a = get_detector().analyze(texto)
+    etiqueta = {"ia": "necesita reescritura", "gris": "conviene revisar",
+                "humano": "listo", "insuficiente": "texto demasiado corto"}[a.verdict]
+    return {
+        "fuente": fuente, "palabras": a.words, "estado": a.verdict, "etiqueta": etiqueta,
+        "puntuacion": None if a.verdict == "insuficiente" else round(a.score, 3),
+        "porcentaje_ia": round(a.percent_ai, 1), "porcentaje_gris": round(a.percent_gray, 1),
+        "aviso": a.warning,
+        "fragmentos": [
+            {"estado": w.verdict, "palabras": w.words, "puntuacion": round(w.score, 3),
+             "inicio": w.start, "fin": w.end, "texto": w.text}
+            for w in sorted(a.windows, key=lambda w: -w.score)
+        ],
+        "nota": ("Señal de revisión, no prueba de deshonestidad. Un texto reformulado con "
+                 "una herramienta automática también se marca."),
+    }
+
+
 @app.get("/", response_class=HTMLResponse)
 def home():
     return render_form()
