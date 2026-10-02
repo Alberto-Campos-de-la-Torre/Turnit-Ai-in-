@@ -210,7 +210,39 @@ correctamente todos los documentos de IA editados a mano o parafraseados. Buena 
 lo que se lee en internet sobre "cómo funciona Turnitin" procede de blogs de
 posicionamiento, no de fuentes primarias.
 
-## 6. Límites conocidos
+## 6. La prueba con un documento real: el límite de verdad
+
+Un protocolo de tesis de 6.105 palabras **escrito al 100% con IA** (en conversación, a lo
+largo de muchos turnos) se analizó con la versión de revisión:
+
+| | Resultado |
+|---|---|
+| Veredicto del documento | "conviene revisar" (no "necesita reescritura") |
+| Palabras marcadas como IA | 18.9% |
+| Fragmentos con p_ia > 0.5 | 41% |
+| Fragmentos con p_ia < 0.1 | 59% |
+
+Comparado con el corpus, la diferencia es evidente: un texto escrito por Claude de una
+sola vez da p_ia mediana 0.9999 y el 100% de los fragmentos marcados; un texto humano
+anterior a 2022 da 0.0001 y el 2%. El documento real da **0.0116 y el 41%**: es bimodal,
+mitad clarísima IA y mitad clarísimo humano.
+
+Dos causas, medidas en ese orden:
+
+1. **La extracción del PDF diluía el resultado.** Un tercio de las palabras eran
+   bibliografía, tablas, cifras, portada y encabezados, y entraban al cálculo como si
+   fueran prosa. Corregido con `detector/extraccion.py`, que aplica a los documentos la
+   misma limpieza que se usó para construir el corpus: el porcentaje subió de 13.6% a 18.9%.
+2. **El corpus solo contiene IA de una sola pasada.** "Escribe el resumen de este título"
+   produce un texto uniforme y reconocible. Un documento escrito en conversación, con
+   instrucciones del autor, sus datos, sus referencias y varias rondas de corrección, tiene
+   palabras de máquina pero trayectoria humana, y el detector no lo ve.
+
+Es la misma brecha que apareció con Claude, un nivel más abajo: entonces faltaba un
+*modelo*, ahora falta una *forma de usarlo*. Y es la que de verdad se usa para escribir un
+documento serio.
+
+## 7. Límites conocidos
 
 - **El texto pulido con IA se escapa la mitad de las veces.** Es el uso más común.
 - **Un parafraseador diseñado para evadir (DIPPER) reduce la detección al 5%** en inglés,
@@ -223,10 +255,13 @@ posicionamiento, no de fuentes primarias.
   aproximación disponible, con un intervalo de confianza amplio (2 casos de 182).
 - **Menos de 150 palabras: sin veredicto.** No hay señal suficiente.
 - **Caducidad.** Cada familia de modelos nueva obliga a repetir la medición.
+- **La escritura asistida en conversación se detecta mal** (19% en un documento real
+  escrito entero con IA), porque el corpus solo tiene generación de una sola pasada. Es
+  hoy el límite principal de la herramienta.
 
 ---
 
-## 7. Uso y mantenimiento
+## 8. Uso y mantenimiento
 
 ```bash
 ~/detector-ia/run_app.sh          # app local en http://127.0.0.1:8000
@@ -252,7 +287,7 @@ Verificaciones que conviene repetir tras cualquier reentrenamiento:
 
 ---
 
-## 8. Notas de operación
+## 9. Notas de operación
 
 - **Modelos y datos** en la ruta que indique `DETECTOR_IA_HOME`; el modelo anterior a la
   incorporación de Claude está en `models/mdeberta-detector-v1-sin-claude`.

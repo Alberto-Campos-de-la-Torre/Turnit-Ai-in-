@@ -13,6 +13,7 @@ from docx import Document
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import HTMLResponse
 
+from detector.extraccion import extraer_prosa
 from detector.pipeline import MIN_WORDS, Detector
 
 # El aviso por idioma dejó de hacer falta al entrenar con textos de Claude: en inglés
@@ -31,19 +32,15 @@ def get_detector() -> Detector:
     return detector
 
 
-def extract_text(name: str, data: bytes) -> str:
-    suffix = Path(name).suffix.lower()
-    if suffix == ".pdf":
-        with pymupdf.open(stream=data, filetype="pdf") as doc:
-            text = "\n".join(p.get_text() for p in doc)
-        text = re.sub(r"-\n(?=[a-záéíóúñ])", "", text)
-    elif suffix == ".docx":
-        text = "\n".join(p.text for p in Document(io.BytesIO(data)).paragraphs)
-    elif suffix in (".txt", ".md", ""):
-        text = data.decode("utf-8", errors="replace")
-    else:
-        raise ValueError(f"Formato no soportado: {suffix}. Usa .pdf, .docx o .txt.")
-    return re.sub(r"[ \t]+", " ", text).strip()
+def extract_text(name: str, data: bytes):
+    """Devuelve solo la prosa del documento (sin bibliografía, tablas ni encabezados).
+
+    Analizar el documento en bruto diluía el resultado: en un protocolo de tesis real,
+    un tercio de las palabras eran referencias, cifras y títulos, y eso bajaba el
+    porcentaje marcado a menos de la mitad de lo que corresponde.
+    """
+    e = extraer_prosa(name, data)
+    return e.texto, e
 
 
 def render(body: str) -> str:
@@ -139,16 +136,19 @@ def render_result(a, source: str) -> str:
 async def api_analizar(payload: dict):
     """API JSON para clientes como el servidor MCP. {"texto": "..."} o {"ruta": "..."}."""
     texto = (payload.get("texto") or "").strip()
-    fuente = "texto"
+    fuente, extraccion = "texto", None
     if not texto and payload.get("ruta"):
         ruta = Path(payload["ruta"]).expanduser()
         if not ruta.is_file():
             return {"error": f"No existe el archivo: {ruta}"}
         try:
-            texto = extract_text(ruta.name, ruta.read_bytes())
+            texto, extr = extract_text(ruta.name, ruta.read_bytes())
         except ValueError as e:
             return {"error": str(e)}
         fuente = str(ruta)
+        extraccion = {"palabras_prosa": extr.palabras_prosa,
+                      "palabras_descartadas": extr.palabras_descartadas,
+                      "descartado_principalmente": extr.motivo_principal}
     if not texto:
         return {"error": "Hace falta 'texto' o 'ruta'."}
 
@@ -156,7 +156,7 @@ async def api_analizar(payload: dict):
     etiqueta = {"ia": "necesita reescritura", "gris": "conviene revisar",
                 "humano": "listo", "insuficiente": "texto demasiado corto"}[a.verdict]
     return {
-        "fuente": fuente, "palabras": a.words, "estado": a.verdict, "etiqueta": etiqueta,
+        "fuente": fuente, "palabras": a.words, "extraccion": extraccion, "estado": a.verdict, "etiqueta": etiqueta,
         "puntuacion": None if a.verdict == "insuficiente" else round(a.score, 3),
         "porcentaje_ia": round(a.percent_ai, 1), "porcentaje_gris": round(a.percent_gray, 1),
         "aviso": a.warning,
@@ -181,10 +181,12 @@ async def analizar(texto: str = Form(""), archivo: UploadFile | None = File(None
     if archivo is not None and archivo.filename:
         data = await archivo.read()
         try:
-            texto = extract_text(archivo.filename, data)
+            texto, extr = extract_text(archivo.filename, data)
         except ValueError as e:
             return render_form(str(e))
-        source = archivo.filename
+        source = (f"{archivo.filename} · {extr.palabras_prosa} palabras de prosa analizadas, "
+                  f"{extr.palabras_descartadas} descartadas"
+                  + (f" ({extr.motivo_principal})" if extr.motivo_principal else ""))
     if not texto.strip():
         return render_form("No recibí ningún texto.")
     return render_result(get_detector().analyze(texto), source)
