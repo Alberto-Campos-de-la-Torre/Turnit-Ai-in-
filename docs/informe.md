@@ -1,10 +1,16 @@
 # Detector local de texto generado con IA — informe del proyecto
 
-Herramienta local para estimar si un trabajo académico fue escrito con IA, pensada para
-un profesor sin acceso a Turnitin. Todo corre en esta máquina: ningún trabajo de alumno
-sale de aquí.
+Herramienta local que marca los fragmentos de un texto que un detector de IA señalaría,
+pensada para un profesor sin acceso a Turnitin. Todo corre en esta máquina: ningún trabajo
+de alumno sale de aquí.
 
-**El resultado es un indicio para conversar con el alumno, nunca una prueba.**
+**Uso previsto: revisión, no sanción.** El alumno reescribe los fragmentos marcados hasta
+que el indicador baja, y así el documento queda listo para enviarse a una revista o a una
+convocatoria sin que lo señalen como escrito con IA. Esa decisión de propósito explica una
+elección del diseño: se prefiere marcar de más. Un texto reformulado con una herramienta
+automática se marca aunque las ideas sean del alumno, porque las palabras no son suyas
+todavía. Como señal de revisión es correcto; **como prueba de deshonestidad no sirve, y no
+debe usarse así.**
 
 ---
 
@@ -153,6 +159,23 @@ variados: una diferencia pequeña, no un sesgo sistemático.
 
 **Y no se le engaña manipulando las frases.** Uniendo y partiendo frases en 300 textos de
 IA, la variación subió de 0.252 a 0.290 y la detección solo bajó del 100% al 99.3%.
+
+**Entrenamiento adversario con DIPPER: la robustez tiene un precio.** Tras añadir 1.384
+textos de IA parafraseados con DIPPER (solo de la partición de entrenamiento):
+
+| | Modelo anterior | Modelo actual |
+|---|---|---|
+| IA parafraseada con DIPPER, 2 pasadas | 5.0% | **90.8%** |
+| Texto humano parafraseado con DIPPER | 0% | **40% como IA + 30% gris** |
+| Texto humano pulido con IA | 62% | 35% |
+| IA sin parafrasear (prueba general) | 99.8% | 98.9% |
+| Falsos positivos: CATyPI / tesis es / PERSUADE | 1.1 / 0.2 / 0.0% | 0.0 / 0.1 / 0.2% |
+
+El modelo aprendió a reconocer **que el texto pasó por un parafraseador**, no que el
+contenido sea de máquina. Con el uso previsto (revisión antes de enviar) eso es aceptable
+e incluso útil: empuja a reescribir con palabras propias. Con un uso punitivo sería
+inaceptable. El modelo anterior quedó archivado en el repositorio de Hugging Face por si
+alguna vez se necesita el comportamiento contrario.
 
 **El parafraseo con un modelo conocido no evade… pero DIPPER sí.** Dos pruebas, y la
 diferencia entre ellas es la lección:

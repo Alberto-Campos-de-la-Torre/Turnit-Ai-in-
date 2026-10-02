@@ -4,6 +4,7 @@ Arranque:  ~/detector-ia/run_app.sh      (luego abrir http://127.0.0.1:8000)
 """
 import html
 import io
+import textwrap
 import re
 from pathlib import Path
 
@@ -66,9 +67,9 @@ def render_result(a, source: str) -> str:
     if a.verdict == "insuficiente":
         return render_form(a.warning)
 
-    badge = {"ia": ("alto", "Indicios altos de escritura con IA"),
-             "gris": ("gris", "Zona gris: conviene revisar"),
-             "humano": ("bajo", "Sin indicios de escritura con IA")}[a.verdict]
+    badge = {"ia": ("alto", "Necesita reescritura antes de enviarlo"),
+             "gris": ("gris", "Conviene revisar los fragmentos marcados"),
+             "humano": ("bajo", "Listo: sin fragmentos marcados como IA")}[a.verdict]
 
     marks = []
     for w in a.windows:
@@ -76,6 +77,23 @@ def render_result(a, source: str) -> str:
         marks.append(
             f'<span class="{cls}" title="puntuación {w.score:.2f} · '
             f'clasificador {w.p_clf:.3f} · binoculars {w.binoculars:.3f}">{html.escape(w.text)}</span>')
+
+    por_reescribir = sorted([w for w in a.windows if w.verdict != "humano"],
+                            key=lambda w: -w.score)[:5]
+    if por_reescribir:
+        items = "".join(
+            f'<li><span class="peso">{w.words} palabras</span> '
+            f'{html.escape(textwrap.shorten(w.text, 220, placeholder=" …"))}</li>'
+            for w in por_reescribir)
+        pendientes = f"""
+      <div class="card">
+        <h2>Qué reescribir primero</h2>
+        <p class="sub">Ordenados por cuánto pesan en el resultado. Reescríbelos con tus
+        propias palabras y vuelve a analizar: el porcentaje debería bajar.</p>
+        <ol class="pendientes">{items}</ol>
+      </div>"""
+    else:
+        pendientes = ""
 
     filas = "".join(
         f"<tr><td>{i}</td><td>{w.words}</td><td>{w.score:.2f}</td><td>{w.p_clf:.3f}</td>"
@@ -93,6 +111,8 @@ def render_result(a, source: str) -> str:
         </div>
         <p class="fuente">Fuente: {html.escape(source)}</p>
       </div>
+
+      {pendientes}
 
       <div class="card">
         <h2>Texto con los fragmentos marcados</h2>

@@ -1,7 +1,9 @@
 # Detector local de texto generado por IA
 
-Herramienta local, de uso personal, para estimar si un texto académico fue escrito con IA.
-El resultado es **un indicio para conversar con el alumno, nunca una prueba**.
+Herramienta local que marca los fragmentos de un texto que un detector de IA señalaría,
+para reescribirlos antes de enviar el trabajo. **Uso previsto: revisión, no sanción.**
+Prefiere marcar de más: un texto reformulado con una herramienta automática también se
+marca, aunque las ideas sean propias.
 
 **Informe completo del proyecto: [`docs/informe.md`](docs/informe.md)** — cómo decide,
 el corpus, los resultados, los límites y cómo mantenerlo cuando salga un modelo nuevo.
@@ -24,8 +26,11 @@ el corpus, los resultados, los límites y cómo mantenerlo cuando salga un model
   250 tesis en español que no están en el corpus: 0,2% IA, 2,3% gris. CATyPI (tesis de
   computación en español, INAOE): 1,1% IA, 2,7% gris sobre 182 secciones juzgadas.
 - **Ataques (hechos):** manipular la longitud de las frases no evade (100% → 99.3%) y
-  parafrasear con un modelo conocido tampoco (100% → 99.2%), pero **DIPPER-XXL, hecho
-  para evadir detectores, baja la detección al 5%** con dos pasadas (inglés, 119 textos).
+  parafrasear con un modelo conocido tampoco (100% → 99.2%); **DIPPER-XXL bajaba la
+  detección al 5%**, y tras el entrenamiento adversario sube al **90.8%**.
+- **Entrenamiento adversario (hecho):** 1.384 textos parafraseados con DIPPER añadidos.
+  Precio: el texto humano reformulado con esa herramienta se marca (0% → 40%), coherente
+  con el uso como señal de revisión.
 - **Variabilidad entre versiones (hecha):** mismos encargos con Opus 5, Sonnet 5 y
   Haiku 4.5. Escritura desde cero: 100% detectada en las tres. Texto pulido: 57% (Opus),
   63% (Sonnet), 100% (Haiku). Entrenado solo con Opus, generaliza a las otras dos.

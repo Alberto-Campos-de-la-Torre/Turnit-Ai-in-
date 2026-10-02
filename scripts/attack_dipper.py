@@ -18,7 +18,9 @@ from difflib import SequenceMatcher
 
 from scripts.common import CORPUS
 
-SALIDA = CORPUS / "ataque_dipper.jsonl"
+SALIDA = CORPUS / "ataque_dipper.jsonl"            # partición test: solo para evaluar
+SALIDA_TRAIN = CORPUS / "dipper_train.jsonl"       # partición train: datos adversarios
+SALIDA_HUMANO = CORPUS / "dipper_humano.jsonl"     # textos humanos parafraseados: control
 MODELO = "kalpeshk2011/dipper-paraphraser-xxl"
 # El repositorio de DIPPER trae un tokenizador roto (vocabulario de 104 piezas) y el
 # modelo responde vacío con él. Hay que usar el de T5, como indican sus autores.
@@ -75,17 +77,22 @@ class Dipper:
 
 
 def paso_parafraseo(args):
-    rows = [json.loads(l) for l in (CORPUS / "dataset.jsonl").open() if '"test"' in l]
-    ia = [r for r in rows if r["label"] == "ai" and r["lang"] == "en"
-          and len(r["text"].split()) >= 150]
+    if args.label == "human":
+        destino = SALIDA_HUMANO
+    else:
+        destino = SALIDA_TRAIN if args.split == "train" else SALIDA
+    rows = [json.loads(l) for l in (CORPUS / "dataset.jsonl").open()
+            if f'"{args.split}"' in l]
+    ia = [r for r in rows if r["split"] == args.split and r["label"] == args.label
+          and r["lang"] == "en" and len(r["text"].split()) >= 150]
     random.Random(23).shuffle(ia)
     muestra = ia[: args.n]
-    hechos = {json.loads(l)["id"] for l in SALIDA.open()} if SALIDA.exists() else set()
+    hechos = {json.loads(l)["id"] for l in destino.open()} if destino.exists() else set()
     muestra = [r for r in muestra if r["id"] not in hechos]
     print(f"{len(muestra)} textos por parafrasear", flush=True)
 
     dipper = Dipper(args.device, args.dtype)
-    with SALIDA.open("a") as f:
+    with destino.open("a") as f:
         for i, r in enumerate(muestra, 1):
             try:
                 p1 = dipper.paraphrase(r["text"])
@@ -94,12 +101,13 @@ def paso_parafraseo(args):
                 print(f"  ! {r['id']}: {type(e).__name__}: {e}", flush=True)
                 continue
             f.write(json.dumps({"id": r["id"], "lang": "en", "generator": r["generator"],
+                                "label": args.label,
                                 "original": r["text"], "parafraseo_1": p1, "parafraseo_2": p2,
                                 "parafraseador": "dipper-xxl"}, ensure_ascii=False) + "\n")
             f.flush()
             if i % 10 == 0:
                 print(f"  {i}/{len(muestra)}", flush=True)
-    print(f"listo -> {SALIDA}")
+    print(f"listo -> {destino}")
 
 
 def paso_puntuacion(args):
@@ -155,6 +163,9 @@ def main():
     ap.add_argument("--paraphrase", action="store_true")
     ap.add_argument("--score", action="store_true")
     ap.add_argument("--n", type=int, default=120)
+    ap.add_argument("--split", default="test", choices=["test", "train"])
+    ap.add_argument("--label", default="ai", choices=["ai", "human"],
+                    help="human: parafrasea texto humano, como control de falsos positivos")
     ap.add_argument("--device", default="cuda:1")
     ap.add_argument("--dtype", default="bf16", choices=["bf16", "8bit"])
     args = ap.parse_args()
