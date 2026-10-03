@@ -10,62 +10,32 @@ el corpus, los resultados, los límites y cómo mantenerlo cuando salga un model
 
 ## Estado
 
-- **Fase 1 (hecha):** detector zero-shot Binoculars + prueba de humo (AUROC 0.945).
-- **Fase 2 (hecha):** corpus humano pre-2022 (resúmenes + fragmentos de tesis, es/en)
-  y su contraparte IA con 6 generadores locales: 25,057 textos. Binoculars en test: AUROC 0.914.
-- **Fase 3 (hecha):** mDeBERTa-v3 afinado + ensamble con Binoculars. Test (con Claude
-  incluido): AUROC 0.9999, 99.8% de IA detectada con 1% de falsos positivos.
-- **Fase 4 (hecha):** app web local. Documentos completos (>1200 palabras): 0 falsos
-  positivos en 40 trabajos humanos; detecta el 100% de los que llevan 30% de IA.
-- **Fase 5 (hecha):** 1.800 textos escritos por Claude (5 subagentes) añadidos al corpus
-  y reentrenamiento. Contra los 300 de prueba: 91% detectado (antes 39%); texto escrito
-  por Claude 100% (inglés pasó del 5% al 100%), texto pulido por Claude 57% (antes 17%).
-  Falsos positivos en textos humanos cortos: 0,4%.
-- **Validación con alumnos reales (hecha):** 1.200 ensayos de PERSUADE 2.0 (alumnos de
-  6º a 12º, EE.UU., inglés): 0% marcado como IA, 0,4% en zona gris. 973 fragmentos de
-  250 tesis en español que no están en el corpus: 0,2% IA, 2,3% gris. CATyPI (tesis de
-  computación en español, INAOE): 1,1% IA, 2,7% gris sobre 182 secciones juzgadas.
-- **Ataques (hechos):** manipular la longitud de las frases no evade (100% → 99.3%) y
-  parafrasear con un modelo conocido tampoco (100% → 99.2%); **DIPPER-XXL bajaba la
-  detección al 5%**, y tras el entrenamiento adversario sube al **90.8%**.
-- **Escritura fuertemente dirigida (medido):** prosa real escrita con Claude en
-  conversación era invisible (p_ia 0.0003, Binoculars la ve *más* humana que lo humano).
-  Entrenar con `ai_polished` como IA recuperó señal (p_ia 0.4257, AUROC 0.939) a cambio de
-  bajar DIPPER de 90.8% a 73.9%. Tres niveles de revisión: normal (1% FP), estricto (5%),
-  exhaustivo (10%).
-- **Documentos reales (medido):** 11 trabajos escritos con IA en conversación se marcan
-  solo al 9% (5 de 11 salen "listo"). Simular escritura iterativa con modelos locales
-  **empeoró** el resultado (5%) y se descartó. El **modo estricto** (contar la zona gris)
-  lo sube al 37% a cambio de 2-4% de falsos positivos.
-- **Entrenamiento adversario (hecho):** 1.384 textos parafraseados con DIPPER añadidos.
-  Precio: el texto humano reformulado con esa herramienta se marca (0% → 40%), coherente
-  con el uso como señal de revisión.
-- **Variabilidad entre versiones (hecha):** mismos encargos con Opus 5, Sonnet 5 y
-  Haiku 4.5. Escritura desde cero: 100% detectada en las tres. Texto pulido: 57% (Opus),
-  63% (Sonnet), 100% (Haiku). Entrenado solo con Opus, generaliza a las otras dos.
+Detector funcionando, con la app local, el servidor MCP y el informe completo. Las cifras
+de referencia (nivel normal, 1% de falsos positivos de diseño):
 
-## Servidor MCP
+| | |
+|---|---|
+| IA sin parafrasear, ocho generadores | 99.5% detectada |
+| Claude escribiendo desde cero (Opus 5, Sonnet 5, Haiku 4.5) | 99-100% |
+| Texto humano pulido con IA | 80% (Claude) |
+| IA parafraseada con DIPPER, dos pasadas | 73.9% |
+| **Documentos reales escritos con IA en conversación** | **8%** (49% en nivel exhaustivo) |
+| Falsos positivos: PERSUADE / tesis en español / CATyPI | 0.0 / 0.0 / 0.0% |
+| Documentos largos humanos | 0 de 40 |
+| Documentos con 30% de IA | 40 de 40 detectados |
 
-Expone el análisis como herramientas para un asistente (Claude Code y cualquier otro
-cliente MCP). **No carga el modelo**: habla con la app local, que ya lo tiene en memoria,
-así la GPU se usa una sola vez.
+Fases recorridas: Binoculars zero-shot → corpus pre-2022 con ocho generadores →
+clasificador mDeBERTa y calibración → app local → textos de Claude → validación con
+escritura de alumnos reales → ataques (frases, parafraseo, DIPPER) → entrenamiento
+adversario → documentos reales del usuario → escritura fuertemente dirigida.
 
-```bash
-./run_app.sh &                                  # la app debe estar corriendo
-claude mcp add detector-ia -- ./.venv/bin/python -m mcp_server.server
-```
+**El límite principal:** cuanto más dirige el autor la escritura, menos señal queda. Un
+documento escrito al 100% con IA en conversación se marca al 8% en nivel normal. El
+informe explica por qué no es un defecto corregible y cuál es la salida (preguntar
+"¿escribe así este alumno?" en lugar de "¿lo escribió una máquina?").
 
-El repositorio ya trae `.mcp.json`, así que al abrir Claude Code en esta carpeta aparece
-solo. Herramientas: `analizar_texto`, `analizar_archivo` (.pdf/.docx/.txt) y `estado`.
-Cada respuesta incluye el porcentaje marcado, los fragmentos a reescribir y la nota de que
-es una señal de revisión, no una prueba.
-
-También hay API JSON directa, por si se quiere usar sin MCP:
-
-```bash
-curl -s localhost:8000/api/analizar -H 'content-type: application/json' \
-     -d '{"ruta": "~/trabajo.docx"}' | jq .
-```
+**Lo que queda pendiente:** trabajos de los propios alumnos del profesor para calibrar con
+su población, y la verificación de autoría contra una muestra base por alumno.
 
 ## Qué incluye este repositorio, y qué no
 
