@@ -56,6 +56,9 @@ def render_form(message: str = "") -> str:
         <textarea id="texto" name="texto" rows="12" placeholder="Mínimo {MIN_WORDS} palabras…"></textarea>
         <p class="sep">o sube un archivo (.pdf, .docx, .txt)</p>
         <input type="file" name="archivo" accept=".pdf,.docx,.txt,.md">
+        <p class="sep"><label class="linea"><input type="checkbox" name="estricto" value="1">
+          Modo estricto: cuenta también los fragmentos dudosos (para revisar antes de enviar)
+        </label></p>
         <button type="submit">Analizar</button>
       </form>""")
 
@@ -152,7 +155,7 @@ async def api_analizar(payload: dict):
     if not texto:
         return {"error": "Hace falta 'texto' o 'ruta'."}
 
-    a = get_detector().analyze(texto)
+    a = get_detector().analyze(texto, estricto=bool(payload.get("estricto")))
     etiqueta = {"ia": "necesita reescritura", "gris": "conviene revisar",
                 "humano": "listo", "insuficiente": "texto demasiado corto"}[a.verdict]
     return {
@@ -176,7 +179,8 @@ def home():
 
 
 @app.post("/analizar", response_class=HTMLResponse)
-async def analizar(texto: str = Form(""), archivo: UploadFile | None = File(None)):
+async def analizar(texto: str = Form(""), archivo: UploadFile | None = File(None),
+                   estricto: str = Form("")):
     source = "texto pegado"
     if archivo is not None and archivo.filename:
         data = await archivo.read()
@@ -189,4 +193,4 @@ async def analizar(texto: str = Form(""), archivo: UploadFile | None = File(None
                   + (f" ({extr.motivo_principal})" if extr.motivo_principal else ""))
     if not texto.strip():
         return render_form("No recibí ningún texto.")
-    return render_result(get_detector().analyze(texto), source)
+    return render_result(get_detector().analyze(texto, estricto=bool(estricto)), source)

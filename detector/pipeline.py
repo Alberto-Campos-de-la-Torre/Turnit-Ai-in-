@@ -88,7 +88,13 @@ class Detector:
     def _verdict(self, score: float) -> str:
         return "ia" if score > self.thr_strict else "gris" if score > self.thr_loose else "humano"
 
-    def analyze(self, text: str) -> Analysis:
+    def analyze(self, text: str, estricto: bool = False) -> Analysis:
+        """estricto: cuenta también la zona gris como pendiente de reescribir.
+
+        Pensado para revisar un texto propio antes de enviarlo: la zona gris es el 5% de
+        falsos positivos, así que incluye fragmentos dudosos que conviene reescribir si el
+        objetivo es que ningún detector los señale.
+        """
         text = text.strip()
         words = len(text.split())
         if words < MIN_WORDS:
@@ -104,10 +110,16 @@ class Detector:
         windows = []
         for seg, p in zip(segments, probs):
             score = self._combine(p, seg.score)
-            windows.append(Window(seg.start, seg.end, seg.text, p, seg.score, score,
-                                  self._verdict(score), len(seg.text.split())))
+            v = self._verdict(score)
+            if estricto and v == "gris":
+                v = "ia"
+            windows.append(Window(seg.start, seg.end, seg.text, p, seg.score, score, v,
+                                  len(seg.text.split())))
 
         doc_score = self._combine(p_doc, global_bino)
+        veredicto_doc = self._verdict(doc_score)
+        if estricto and veredicto_doc == "gris":
+            veredicto_doc = "ia"
         total = sum(w.words for w in windows) or words
         pct = lambda v: 100.0 * sum(w.words for w in windows if w.verdict == v) / total
         percent_ai, percent_gray = pct("ia"), pct("gris")
@@ -125,5 +137,5 @@ class Detector:
                       "gris" if n_ia >= 2 and (percent_ai >= 30 or percent_ai + percent_gray >= 40)
                       else "humano")
         severity = {"humano": 0, "gris": 1, "ia": 2}
-        verdict = max(self._verdict(doc_score), by_windows, key=severity.get)
+        verdict = max(veredicto_doc, by_windows, key=severity.get)
         return Analysis(words, doc_score, verdict, percent_ai, percent_gray, windows)

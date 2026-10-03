@@ -67,14 +67,15 @@ def _resumen(d: dict, n_fragmentos: int) -> dict:
         "revisión, no una prueba de deshonestidad."
     )
 )
-def analizar_texto(texto: str, fragmentos: int = 5) -> dict:
+def analizar_texto(texto: str, fragmentos: int = 5, estricto: bool = False) -> dict:
     """Analiza el texto que se le pasa directamente.
 
     Args:
         texto: el texto a revisar (mínimo 150 palabras).
         fragmentos: cuántos fragmentos marcados devolver, de mayor a menor puntuación.
+        estricto: cuenta también los fragmentos dudosos, para revisar antes de enviar.
     """
-    return _resumen(_pedir({"texto": texto}), fragmentos)
+    return _resumen(_pedir({"texto": texto, "estricto": estricto}), fragmentos)
 
 
 @mcp.tool(
@@ -83,14 +84,16 @@ def analizar_texto(texto: str, fragmentos: int = 5) -> dict:
         "marcaría un detector de IA. Señal de revisión, no prueba de deshonestidad."
     )
 )
-def analizar_archivo(ruta: str, fragmentos: int = 5) -> dict:
+def analizar_archivo(ruta: str, fragmentos: int = 5, estricto: bool = False) -> dict:
     """Analiza un documento del disco.
 
     Args:
         ruta: ruta al archivo (.pdf, .docx, .txt).
         fragmentos: cuántos fragmentos marcados devolver.
+        estricto: cuenta también los fragmentos dudosos, para revisar antes de enviar.
     """
-    return _resumen(_pedir({"ruta": str(Path(ruta).expanduser())}), fragmentos)
+    return _resumen(_pedir({"ruta": str(Path(ruta).expanduser()), "estricto": estricto}),
+                    fragmentos)
 
 
 @mcp.tool(description="Comprueba si el detector local está disponible y responde.")

@@ -28,6 +28,10 @@ el corpus, los resultados, los límites y cómo mantenerlo cuando salga un model
 - **Ataques (hechos):** manipular la longitud de las frases no evade (100% → 99.3%) y
   parafrasear con un modelo conocido tampoco (100% → 99.2%); **DIPPER-XXL bajaba la
   detección al 5%**, y tras el entrenamiento adversario sube al **90.8%**.
+- **Documentos reales (medido):** 11 trabajos escritos con IA en conversación se marcan
+  solo al 9% (5 de 11 salen "listo"). Simular escritura iterativa con modelos locales
+  **empeoró** el resultado (5%) y se descartó. El **modo estricto** (contar la zona gris)
+  lo sube al 37% a cambio de 2-4% de falsos positivos.
 - **Entrenamiento adversario (hecho):** 1.384 textos parafraseados con DIPPER añadidos.
   Precio: el texto humano reformulado con esa herramienta se marca (0% → 40%), coherente
   con el uso como señal de revisión.

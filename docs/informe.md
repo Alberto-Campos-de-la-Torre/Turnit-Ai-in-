@@ -242,6 +242,45 @@ Es la misma brecha que apareció con Claude, un nivel más abajo: entonces falta
 *modelo*, ahora falta una *forma de usarlo*. Y es la que de verdad se usa para escribir un
 documento serio.
 
+### El intento de cerrar el hueco, y por qué falló
+
+Se simularon 592 conversaciones de cuatro turnos (pedir la sección a partir de puntos
+propios, concretar con un dato, integrar un fragmento del autor, recortar) con tres
+modelos locales, y se reentrenó. El resultado empeoró justo donde se buscaba mejorar:
+
+| | Antes | Con escritura iterativa simulada |
+|---|---|---|
+| 11 documentos reales | 9% marcado, 5 de 11 "listo" | **5% marcado, 7 de 11 "listo"** |
+| Ataque DIPPER (2 pasadas) | 90.8% | 84.9% |
+| Claude escribiendo desde cero | 100% | 98% |
+
+La explicación más probable: la simulación usó modelos locales con instrucciones
+redactadas por el asistente, y los documentos reales se escribieron con Claude en una
+conversación real. Se le enseñó un estilo que no era el objetivo. El modelo se restauró
+desde Hugging Face y el intento quedó archivado en `/mnt/almacen/modelo_v4_iterativo_fallido`.
+
+### El modo estricto: lo que sí funciona hoy
+
+En lugar de confiar en un modelo mejor, el modo estricto usa el umbral del 5% como línea
+de acción, es decir, cuenta también los fragmentos dudosos. Sobre los documentos reales:
+
+| | Normal | Estricto |
+|---|---|---|
+| Promedio marcado | 9% | **37%** |
+| Documentos que piden reescritura | 2 de 11 | **9 de 11** |
+
+Su precio, medido sobre escritura humana real (muestras de 300):
+
+| Corpus | Normal | Estricto |
+|---|---|---|
+| CATyPI (tesis de computación en español) | 0.0% | 1.9% |
+| Tesis en español ajenas al corpus | 0.1% | 4.0% |
+| PERSUADE (ensayos escolares en inglés) | 0.2% | 3.0% |
+
+Es decir: para revisar un texto propio antes de enviarlo, el modo estricto da una lista de
+trabajo útil a cambio de señalar de más. Para cualquier uso con consecuencias, el modo
+normal sigue siendo el único defendible.
+
 ## 7. Límites conocidos
 
 - **El texto pulido con IA se escapa la mitad de las veces.** Es el uso más común.
