@@ -56,6 +56,7 @@ def _resumen(d: dict, n_fragmentos: int) -> dict:
             for f in fragmentos
         ],
         "total_fragmentos_marcados": sum(1 for f in d["fragmentos"] if f["estado"] != "humano"),
+        "procedencia": d.get("procedencia"),
         "nota": d["nota"],
     }
 

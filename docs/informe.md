@@ -227,7 +227,57 @@ dirigiendo mejor la IA, a cambio de pedirle al profesor una muestra base por alu
 
 ---
 
-## 8. Límites conocidos
+## 8. Señal de procedencia: ¿una sola mano?
+
+Pregunta distinta y complementaria: en vez de "¿lo escribió una máquina?", **"¿está este
+documento escrito por una sola mano?"**. No necesita datos de ningún alumno, no guarda
+nada y se calcula dentro del propio documento (`detector/consistencia.py`).
+
+**Qué se mide.** El documento se agrupa en bloques de ~150 palabras y se cuenta cuántos
+superan una vara moderada (p_clasificador > 0.5), cuántos quedan claramente por debajo
+(< 0.1) y cuál es la racha más larga de bloques marcados consecutivos. Hay mezcla cuando
+aparece una racha de 2 o más junto a 2 o más bloques claramente humanos. Se exige **racha**
+y no bloques sueltos porque la mezcla real viene en bloques, mientras los falsos positivos
+del clasificador son aislados.
+
+| Tipo de documento (>1.200 palabras) | n | Marcado como mezcla | Bloques de máquina |
+|---|---|---|---|
+| Humano | 15 | **7%** | 5% |
+| 30% de IA intercalada | 15 | **93%** | 53% |
+| 60% de IA intercalada | 15 | 93% | 58% |
+| Enteramente de IA | 15 | 0% (correcto: una sola mano) | 99% |
+
+**El tamaño del bloque es crítico.** Con las ventanas pequeñas del análisis principal
+(≥60 tokens) los falsos positivos suben del 7% al **53%**, porque el clasificador es más
+ruidoso por fragmento y aparecen marcados aislados. De ahí el reagrupamiento a 150 palabras.
+
+**Lo que no funcionó, medido y descartado:** estilometría clásica por ventana (palabras
+función, n-gramas de caracteres, ritmo, puntuación) con agrupación en dos grupos o saltos
+entre vecinas, contra una prueba de permutación. Seis variantes, AUROC entre 0.29 y 0.59,
+es decir azar. La causa: un documento académico humano ya es heterogéneo porque la
+introducción, la metodología y las conclusiones se escriben distinto, y esa variación
+legítima tapa la de procedencia.
+
+**Sobre los 11 documentos reales del usuario**, esta señal resulta más informativa que el
+porcentaje calibrado: el protocolo de tesis da 21 de 23 bloques con aspecto de máquina, y
+dos tareas dan 7 de 7 y 6 de 6, es decir "homogéneo, y parece de máquina". Cuatro
+documentos siguen saliendo limpios.
+
+**Es un indicio secundario, nunca un veredicto:** marca el 7% de los documentos humanos, y
+las causas legítimas de heterogeneidad (citas largas, secciones de naturaleza distinta,
+trabajo en equipo, redacción separada en el tiempo) no se distinguen de la mezcla con IA.
+
+### Lo que queda diseñado y sin construir
+
+Comparar contra una muestra conocida de la escritura del alumno sería más robusto, pero
+exige datos suyos. Se puede hacer sin guardar texto (solo un vector de ~100 cifras del que
+no se reconstruye nada), y aun así: una huella de estilo es un dato personal, el
+consentimiento en una relación profesor-alumno nunca es del todo libre, y la muestra base
+tendría que escribirse en clase y en un entorno controlado o la calibración queda al revés.
+Se deja sin construir hasta que exista una política institucional de consentimiento y
+borrado.
+
+## 9. Límites conocidos
 
 - **La escritura fuertemente dirigida se detecta mal** (8% en nivel normal). Es hoy el
   límite principal.
@@ -242,7 +292,7 @@ dirigiendo mejor la IA, a cambio de pedirle al profesor una muestra base por alu
 
 ---
 
-## 9. Uso y mantenimiento
+## 10. Uso y mantenimiento
 
 ```bash
 ./run_app.sh                       # app local en http://127.0.0.1:8000
@@ -267,10 +317,11 @@ Verificaciones que conviene repetir tras cualquier reentrenamiento:
 | `scripts/eval_documents.py` | documentos largos, humanos y mixtos |
 | `scripts/eval_alumnos.py` | falsos positivos en escritura estudiantil real |
 | `scripts/probe_shortcuts.py` | que el modelo no se apoye en artefactos del corpus |
+| `scripts/eval_consistencia.py` | la señal de procedencia (mezcla vs una sola mano) |
 
 ---
 
-## 10. Servidor MCP
+## 11. Servidor MCP
 
 Expone el análisis como herramientas para un asistente. **No carga el modelo**: habla por
 HTTP con la app local, así la GPU se usa una sola vez aunque haya varios clientes.
@@ -287,7 +338,7 @@ que nunca presente la salida como evidencia de plagio, porque un asistente que r
 
 ---
 
-## 11. Notas de operación
+## 12. Notas de operación
 
 - **Modelos y datos** en `DETECTOR_IA_HOME`. Dos versiones publicadas en repositorios
   privados de Hugging Face: `ttech12/Ai-detector` (revisión) y

@@ -78,6 +78,15 @@ def render_result(a, source: str) -> str:
             f'<span class="{cls}" title="puntuación {w.score:.2f} · '
             f'clasificador {w.p_clf:.3f} · binoculars {w.binoculars:.3f}">{html.escape(w.text)}</span>')
 
+    c = a.consistencia
+    if c and not c.aviso:
+        consistencia = (f"<strong>Procedencia:</strong> {c.etiqueta} "
+                        f"({c.marcados} de {c.ventanas} fragmentos parecen de máquina, "
+                        f"racha más larga {c.racha}). Indicio secundario: marca el 7% de los "
+                        f"documentos humanos.<br>")
+    else:
+        consistencia = ""
+
     por_reescribir = sorted([w for w in a.windows if w.verdict != "humano"],
                             key=lambda w: -w.score)[:5]
     if por_reescribir:
@@ -109,7 +118,7 @@ def render_result(a, source: str) -> str:
           <div><strong>{a.words}</strong><span>palabras · {len(a.windows)} fragmentos</span></div>
           <div><strong>{a.score:.2f}</strong><span>puntuación global</span></div>
         </div>
-        <p class="fuente">Fuente: {html.escape(source)}</p>
+        <p class="fuente">{consistencia}Fuente: {html.escape(source)}</p>
       </div>
 
       {pendientes}
@@ -164,6 +173,15 @@ async def api_analizar(payload: dict):
         "puntuacion": None if a.verdict == "insuficiente" else round(a.score, 3),
         "porcentaje_ia": round(a.percent_ai, 1), "porcentaje_gris": round(a.percent_gray, 1),
         "aviso": a.warning,
+        "procedencia": None if not a.consistencia or a.consistencia.aviso else {
+            "etiqueta": a.consistencia.etiqueta,
+            "parece_mezcla": a.consistencia.mezcla,
+            "fragmentos_de_maquina": a.consistencia.marcados,
+            "racha_mas_larga": a.consistencia.racha,
+            "fragmentos_claramente_humanos": a.consistencia.humanos,
+            "fragmentos_totales": a.consistencia.ventanas,
+            "nota": "Indicio secundario: marca el 7% de los documentos humanos.",
+        },
         "fragmentos": [
             {"estado": w.verdict, "palabras": w.words, "puntuacion": round(w.score, 3),
              "inicio": w.start, "fin": w.end, "texto": w.text}

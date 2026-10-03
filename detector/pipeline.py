@@ -20,6 +20,7 @@ import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from .binoculars import DEFAULT_OBSERVER, DEFAULT_PERFORMER, Binoculars
+from .consistencia import Consistencia, analizar as analizar_consistencia
 
 # Dónde viven modelos y datos. Se configura con DETECTOR_IA_HOME (ver README).
 BASE = Path(os.environ.get("DETECTOR_IA_HOME", Path.home() / "detector-ia-datos"))
@@ -49,6 +50,7 @@ class Analysis:
     percent_ai: float        # % de palabras en ventanas marcadas como IA
     percent_gray: float
     windows: list[Window]
+    consistencia: Consistencia | None = None
     warning: str | None = None
 
     def to_dict(self):
@@ -144,4 +146,20 @@ class Detector:
                       else "humano")
         severity = {"humano": 0, "gris": 1, "ia": 2}
         verdict = max(veredicto_doc, by_windows, key=severity.get)
-        return Analysis(words, doc_score, verdict, percent_ai, percent_gray, windows)
+        # La señal de procedencia se calcula sobre bloques de ~150 palabras, no sobre las
+        # ventanas del análisis: con ventanas pequeñas el clasificador es más ruidoso por
+        # fragmento y la tasa de falsos positivos sube del 7% al 53%.
+        bloques, actual, cuenta = [], [], 0
+        for w in windows:
+            actual.append(w.text)
+            cuenta += w.words
+            if cuenta >= 150:
+                bloques.append(" ".join(actual))
+                actual, cuenta = [], 0
+        if actual and bloques:
+            bloques[-1] += " " + " ".join(actual)
+        elif actual:
+            bloques.append(" ".join(actual))
+        consistencia = analizar_consistencia(self._p_ai(bloques) if len(bloques) >= 2 else [])
+        return Analysis(words, doc_score, verdict, percent_ai, percent_gray, windows,
+                        consistencia)

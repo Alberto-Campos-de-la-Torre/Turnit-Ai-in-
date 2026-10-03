@@ -34,6 +34,11 @@ documento escrito al 100% con IA en conversación se marca al 8% en nivel normal
 informe explica por qué no es un defecto corregible y cuál es la salida (preguntar
 "¿escribe así este alumno?" en lugar de "¿lo escribió una máquina?").
 
+**Señal de procedencia** (`detector/consistencia.py`): responde "¿una sola mano?" sin
+datos de ningún alumno. Detecta el 93% de los documentos mixtos y marca el 7% de los
+humanos. En los documentos reales del usuario es más informativa que el porcentaje
+calibrado: el protocolo de tesis da 21 de 23 bloques con aspecto de máquina.
+
 **Lo que queda pendiente:** trabajos de los propios alumnos del profesor para calibrar con
 su población, y la verificación de autoría contra una muestra base por alumno.
 
