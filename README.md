@@ -28,6 +28,11 @@ el corpus, los resultados, los límites y cómo mantenerlo cuando salga un model
 - **Ataques (hechos):** manipular la longitud de las frases no evade (100% → 99.3%) y
   parafrasear con un modelo conocido tampoco (100% → 99.2%); **DIPPER-XXL bajaba la
   detección al 5%**, y tras el entrenamiento adversario sube al **90.8%**.
+- **Escritura fuertemente dirigida (medido):** prosa real escrita con Claude en
+  conversación era invisible (p_ia 0.0003, Binoculars la ve *más* humana que lo humano).
+  Entrenar con `ai_polished` como IA recuperó señal (p_ia 0.4257, AUROC 0.939) a cambio de
+  bajar DIPPER de 90.8% a 73.9%. Tres niveles de revisión: normal (1% FP), estricto (5%),
+  exhaustivo (10%).
 - **Documentos reales (medido):** 11 trabajos escritos con IA en conversación se marcan
   solo al 9% (5 de 11 salen "listo"). Simular escritura iterativa con modelos locales
   **empeoró** el resultado (5%) y se descartó. El **modo estricto** (contar la zona gris)

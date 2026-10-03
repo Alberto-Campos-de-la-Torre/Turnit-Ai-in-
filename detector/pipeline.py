@@ -63,8 +63,16 @@ class Detector:
         self.cal = json.loads(CAL_PATH.read_text())
         self.w_clf, self.w_bino = self.cal["coef"]
         self.bias = self.cal["intercept"]
-        self.thr_strict = self.cal["thresholds"]["1.0%"]
-        self.thr_loose = self.cal["thresholds"]["5.0%"]
+        # Tres niveles de exigencia. Medido sobre prosa de IA fuertemente dirigida
+        # (el caso difícil): el 1% recoge el 24%, el 5% el 65% y el 10% el 71%.
+        self.umbrales = {
+            "normal": (self.cal["thresholds"]["1.0%"], self.cal["thresholds"]["5.0%"]),
+            "estricto": (self.cal["thresholds"]["5.0%"],
+                         self.cal["thresholds"].get("10.0%", self.cal["thresholds"]["5.0%"])),
+            "exhaustivo": (self.cal["thresholds"].get("10.0%", self.cal["thresholds"]["5.0%"]),
+                           self.cal["thresholds"].get("10.0%", self.cal["thresholds"]["5.0%"])),
+        }
+        self.thr_strict, self.thr_loose = self.umbrales["normal"]
         self.tok = AutoTokenizer.from_pretrained(str(MODEL_DIR))
         self.clf = AutoModelForSequenceClassification.from_pretrained(
             str(MODEL_DIR), dtype=torch.float32).to(device).eval()
@@ -88,13 +96,15 @@ class Detector:
     def _verdict(self, score: float) -> str:
         return "ia" if score > self.thr_strict else "gris" if score > self.thr_loose else "humano"
 
-    def analyze(self, text: str, estricto: bool = False) -> Analysis:
-        """estricto: cuenta también la zona gris como pendiente de reescribir.
+    def analyze(self, text: str, estricto: bool = False, nivel: str | None = None) -> Analysis:
+        """nivel: "normal" (1% de falsos positivos), "estricto" (5%) o "exhaustivo" (10%).
 
-        Pensado para revisar un texto propio antes de enviarlo: la zona gris es el 5% de
-        falsos positivos, así que incluye fragmentos dudosos que conviene reescribir si el
-        objetivo es que ningún detector los señale.
+        Para revisar un texto propio antes de enviarlo conviene aflojar el umbral: la
+        escritura fuertemente dirigida por el autor queda en zona intermedia y el nivel
+        normal no la recoge. `estricto=True` equivale a nivel="estricto".
         """
+        nivel = nivel or ("estricto" if estricto else "normal")
+        self.thr_strict, self.thr_loose = self.umbrales[nivel]
         text = text.strip()
         words = len(text.split())
         if words < MIN_WORDS:
@@ -111,15 +121,11 @@ class Detector:
         for seg, p in zip(segments, probs):
             score = self._combine(p, seg.score)
             v = self._verdict(score)
-            if estricto and v == "gris":
-                v = "ia"
             windows.append(Window(seg.start, seg.end, seg.text, p, seg.score, score, v,
                                   len(seg.text.split())))
 
         doc_score = self._combine(p_doc, global_bino)
         veredicto_doc = self._verdict(doc_score)
-        if estricto and veredicto_doc == "gris":
-            veredicto_doc = "ia"
         total = sum(w.words for w in windows) or words
         pct = lambda v: 100.0 * sum(w.words for w in windows if w.verdict == v) / total
         percent_ai, percent_gray = pct("ia"), pct("gris")

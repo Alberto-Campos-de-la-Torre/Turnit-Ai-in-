@@ -155,7 +155,8 @@ async def api_analizar(payload: dict):
     if not texto:
         return {"error": "Hace falta 'texto' o 'ruta'."}
 
-    a = get_detector().analyze(texto, estricto=bool(payload.get("estricto")))
+    a = get_detector().analyze(texto, nivel=payload.get("nivel") or
+                               ("estricto" if payload.get("estricto") else "normal"))
     etiqueta = {"ia": "necesita reescritura", "gris": "conviene revisar",
                 "humano": "listo", "insuficiente": "texto demasiado corto"}[a.verdict]
     return {

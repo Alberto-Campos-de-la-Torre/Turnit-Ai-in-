@@ -47,6 +47,12 @@ def load_rows(split, labels=("human", "ai")):
             if d["split"] == split and d["label"] in labels]
 
 
+# Incluir `ai_polished` como IA obliga al modelo a mirar el fraseo y no el contenido:
+# son textos con contenido humano y palabras de máquina. Es el único material del corpus
+# que aísla esa diferencia, y es lo que falta para la escritura fuertemente dirigida.
+ETIQUETAS_CON_PULIDO = ("human", "ai", "ai_polished")
+
+
 def collate(batch, pad_id):
     n = max(len(b["input_ids"]) for b in batch)
     ids = torch.full((len(batch), n), pad_id, dtype=torch.long)
@@ -90,13 +96,17 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-5)
     ap.add_argument("--device", default="cuda:1")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--incluir-pulido", action="store_true",
+                    help="entrena contando ai_polished como IA (fraseo de máquina sobre "
+                         "contenido humano)")
     args = ap.parse_args()
 
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     tok = AutoTokenizer.from_pretrained(BASE_MODEL)
-    train_rows, val_rows = load_rows("train"), load_rows("val")
-    print(f"train={len(train_rows)} val={len(val_rows)}", flush=True)
+    etiquetas = ETIQUETAS_CON_PULIDO if args.incluir_pulido else ("human", "ai")
+    train_rows, val_rows = load_rows("train", etiquetas), load_rows("val", etiquetas)
+    print(f"train={len(train_rows)} val={len(val_rows)} etiquetas={etiquetas}", flush=True)
 
     fn = lambda b: collate(b, tok.pad_token_id)
     train_loader = DataLoader(TextDataset(train_rows, tok), batch_size=args.batch_size,

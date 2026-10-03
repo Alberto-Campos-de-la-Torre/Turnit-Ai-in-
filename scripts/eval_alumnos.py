@@ -20,15 +20,17 @@ def main():
     ap.add_argument("--file", default="alumnos_persuade.jsonl")
     ap.add_argument("--n", type=int, default=1200)
     ap.add_argument("--device", default="cuda:1")
-    ap.add_argument("--estricto", action="store_true",
-                    help="cuenta también la zona gris, como el modo estricto de la app")
+    ap.add_argument("--estricto", action="store_true", help="equivale a --nivel estricto")
+    ap.add_argument("--nivel", default=None,
+                    choices=["normal", "estricto", "exhaustivo"],
+                    help="exigencia del umbral: 1%, 5% o 10% de falsos positivos")
     args = ap.parse_args()
 
     rows = [json.loads(l) for l in (CORPUS / args.file).open()][: args.n]
     det = Detector(args.device)
     veredictos, por_grupo, marcados = Counter(), defaultdict(Counter), []
     for i, r in enumerate(rows, 1):
-        a = det.analyze(r["text"], estricto=args.estricto)
+        a = det.analyze(r["text"], nivel=args.nivel or ("estricto" if args.estricto else "normal"))
         veredictos[a.verdict] += 1
         for campo in ("nota", "grado", "nivel", "seccion"):
             if r.get(campo) is not None:

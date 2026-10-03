@@ -67,15 +67,17 @@ def _resumen(d: dict, n_fragmentos: int) -> dict:
         "revisión, no una prueba de deshonestidad."
     )
 )
-def analizar_texto(texto: str, fragmentos: int = 5, estricto: bool = False) -> dict:
+def analizar_texto(texto: str, fragmentos: int = 5, nivel: str = "normal") -> dict:
     """Analiza el texto que se le pasa directamente.
 
     Args:
         texto: el texto a revisar (mínimo 150 palabras).
         fragmentos: cuántos fragmentos marcados devolver, de mayor a menor puntuación.
-        estricto: cuenta también los fragmentos dudosos, para revisar antes de enviar.
+        nivel: "normal" (1% de falsos positivos), "estricto" (5%) o "exhaustivo" (10%).
+            Para revisar un texto propio conviene "estricto" o "exhaustivo": la escritura
+            muy dirigida por el autor queda en zona intermedia y el nivel normal no la ve.
     """
-    return _resumen(_pedir({"texto": texto, "estricto": estricto}), fragmentos)
+    return _resumen(_pedir({"texto": texto, "nivel": nivel}), fragmentos)
 
 
 @mcp.tool(
@@ -84,15 +86,15 @@ def analizar_texto(texto: str, fragmentos: int = 5, estricto: bool = False) -> d
         "marcaría un detector de IA. Señal de revisión, no prueba de deshonestidad."
     )
 )
-def analizar_archivo(ruta: str, fragmentos: int = 5, estricto: bool = False) -> dict:
+def analizar_archivo(ruta: str, fragmentos: int = 5, nivel: str = "normal") -> dict:
     """Analiza un documento del disco.
 
     Args:
         ruta: ruta al archivo (.pdf, .docx, .txt).
         fragmentos: cuántos fragmentos marcados devolver.
-        estricto: cuenta también los fragmentos dudosos, para revisar antes de enviar.
+        nivel: "normal", "estricto" o "exhaustivo" (ver analizar_texto).
     """
-    return _resumen(_pedir({"ruta": str(Path(ruta).expanduser()), "estricto": estricto}),
+    return _resumen(_pedir({"ruta": str(Path(ruta).expanduser()), "nivel": nivel}),
                     fragmentos)
 
 

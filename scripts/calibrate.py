@@ -18,7 +18,7 @@ from scripts.common import CORPUS
 from scripts.train_classifier import MODEL_DIR
 
 CAL_PATH = MODEL_DIR.parent / "calibration.json"
-FPRS = (0.005, 0.01, 0.05)
+FPRS = (0.005, 0.01, 0.05, 0.10)
 
 
 def load(split, tag="qwen2.5-3b"):

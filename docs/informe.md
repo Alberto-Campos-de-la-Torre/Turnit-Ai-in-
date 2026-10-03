@@ -259,6 +259,58 @@ redactadas por el asistente, y los documentos reales se escribieron con Claude e
 conversación real. Se le enseñó un estilo que no era el objetivo. El modelo se restauró
 desde Hugging Face y el intento quedó archivado en `/mnt/almacen/modelo_v4_iterativo_fallido`.
 
+### La escritura fuertemente dirigida: el límite del planteamiento
+
+Con autorización del usuario se extrajo prosa de documento escrita por Claude en sus
+conversaciones reales (`scripts/extraer_transcripciones.py`, solo bloques de prosa
+escritos en archivos .tex/.md, descartando código, rutas, correos y claves): 17 bloques,
+5.441 palabras. Medido con el modelo de revisión:
+
+| | p_clasificador (mediana) | Binoculars (mediana) |
+|---|---|---|
+| Claude de una sola pasada | 0.9999 | 0.959 |
+| **Prosa real escrita en conversación** | **0.0003** | **1.097** |
+| Humano anterior a 2022 | 0.0001 | 1.008 |
+
+La prosa real no solo pasa desapercibida: **Binoculars la puntúa más humana que el texto
+humano**. La explicación es que esa métrica mide predictibilidad, y un texto donde el autor
+decide el contenido, los datos y el fraseo turno a turno está lleno de decisiones que
+ningún modelo habría predicho. Dirigir mucho destruye la señal que esta familia de
+detectores puede ver, y eso aplica igual a cualquier detector entrenado sobre texto
+generado.
+
+### El experimento que recuperó señal: `ai_polished` como IA
+
+Los 2.689 textos `ai_polished` (contenido humano, palabras de máquina) estaban excluidos
+del entrenamiento. Incluirlos como IA obliga al modelo a mirar el fraseo y no el contenido:
+
+| | Sin pulido en entrenamiento | Con pulido como IA |
+|---|---|---|
+| Prosa real dirigida: p_clasificador | 0.0003 | **0.4257** |
+| Prosa real dirigida: AUROC vs alumnos reales | ≈ azar | **0.939** |
+| Claude puliendo texto humano | 33% | **80%** |
+| Falsos positivos (CATyPI / tesis / PERSUADE) | 0 / 0.1 / 0.2% | 0 / 0.1 / 0.1% |
+| Ataque DIPPER (2 pasadas) | 90.8% | 73.9% |
+
+Recuperar la escritura dirigida cuesta 17 puntos de resistencia al parafraseo adversario.
+Se eligió quedarse con esta versión: la escritura dirigida es lo que ocurre de verdad,
+mientras DIPPER exige buscar e instalar un modelo de 45 GB.
+
+### Tres niveles de revisión
+
+La señal recuperada está en zona intermedia, así que el nivel de exigencia importa. Sobre
+los 11 documentos reales y sobre escritura estudiantil real:
+
+| Nivel | Umbral | Documentos reales marcados | Falsos positivos (CATyPI / tesis / PERSUADE) |
+|---|---|---|---|
+| normal | 1% | 8% | 0 / 0 / 0% |
+| estricto | 5% | 24% | 1.1 / 3.0 / 0.3% |
+| exhaustivo | 10% | **49%** | 4.6 / **14.7** / 2.0% |
+
+El protocolo de tesis pasa del 20% al 88% marcado entre el nivel normal y el exhaustivo.
+Pero el nivel exhaustivo marca casi 15 de cada 100 fragmentos de tesis humanas: solo tiene
+sentido para revisar un texto propio, nunca para juzgar a otro.
+
 ### El modo estricto: lo que sí funciona hoy
 
 En lugar de confiar en un modelo mejor, el modo estricto usa el umbral del 5% como línea
