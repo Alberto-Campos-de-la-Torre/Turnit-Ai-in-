@@ -321,7 +321,30 @@ Verificaciones que conviene repetir tras cualquier reentrenamiento:
 
 ---
 
-## 11. Servidor MCP
+## 11. Pruebas automatizadas
+
+```bash
+pytest            # 61 pruebas en ~3 s, sin cargar modelos
+pytest -m gpu     # 6 de integración con el modelo entrenado
+```
+
+Las rápidas no tocan la GPU: la API se prueba con un detector falso y el MCP con la red
+simulada. Cubren la división en oraciones y sus offsets, la extracción de prosa (incluido
+el filtro de encabezados repetidos, que compara las líneas sin sus dígitos para que
+"página 3" y "página 4" cuenten como la misma), la regla del veredicto de documento, la
+señal de procedencia, la limpieza del corpus y las particiones.
+
+Varias pruebas fijan correcciones concretas para que no vuelvan: que un único fragmento
+marcado en un texto corto no escale a "ia", que "Claro que el modelo base funciona" no se
+confunda con un preámbulo, y que "como asistente de ingeniería" no se tome por una negativa
+del modelo.
+
+La suite encontró un error el mismo día que se escribió: al añadir el campo de procedencia,
+el aviso de "texto demasiado corto" quedó asignado por posición al campo equivocado, así
+que la app devolvía el formulario sin explicación. Estaba en producción local y nadie lo
+había notado.
+
+## 12. Servidor MCP
 
 Expone el análisis como herramientas para un asistente. **No carga el modelo**: habla por
 HTTP con la app local, así la GPU se usa una sola vez aunque haya varios clientes.
@@ -338,7 +361,7 @@ que nunca presente la salida como evidencia de plagio, porque un asistente que r
 
 ---
 
-## 12. Notas de operación
+## 13. Notas de operación
 
 - **Modelos y datos** en `DETECTOR_IA_HOME`. Dos versiones publicadas en repositorios
   privados de Hugging Face: `ttech12/Ai-detector` (revisión) y

@@ -30,6 +30,28 @@ MIN_WORDS = 150          # por debajo de esto no hay señal suficiente
 MAX_LEN = 512
 
 
+SEVERIDAD = {"humano": 0, "gris": 1, "ia": 2}
+
+
+def veredicto_por_fragmentos(veredictos: list[str], palabras: list[int]) -> str:
+    """Veredicto del documento a partir de lo que marcan sus fragmentos.
+
+    Se exige un número mínimo de fragmentos marcados y no solo un porcentaje: en un texto
+    corto (4 ventanas) un único falso positivo por ventana ya sería el 25% del documento.
+    Medido sobre 213 textos humanos de prueba, esta regla marca como IA al 0,5% (con el
+    porcentaje solo era el 5,2%) y sigue detectando el 99% de los textos de IA.
+    """
+    total = sum(palabras) or 1
+    pct = lambda v: 100.0 * sum(w for w, x in zip(palabras, veredictos) if x == v) / total
+    porcentaje_ia, porcentaje_gris = pct("ia"), pct("gris")
+    n_ia = veredictos.count("ia")
+    if n_ia >= 3 and porcentaje_ia >= 25:
+        return "ia"
+    if n_ia >= 2 and (porcentaje_ia >= 30 or porcentaje_ia + porcentaje_gris >= 40):
+        return "gris"
+    return "humano"
+
+
 @dataclass
 class Window:
     start: int
@@ -111,8 +133,8 @@ class Detector:
         words = len(text.split())
         if words < MIN_WORDS:
             return Analysis(words, float("nan"), "insuficiente", 0.0, 0.0, [],
-                            f"El texto tiene {words} palabras. Por debajo de {MIN_WORDS} "
-                            "no hay señal suficiente para decir nada.")
+                            warning=f"El texto tiene {words} palabras. Por debajo de "
+                                    f"{MIN_WORDS} no hay señal suficiente para decir nada.")
 
         global_bino, segments = self.bino.score_segments(text)
         texts = [s.text for s in segments] or [text]
@@ -132,20 +154,12 @@ class Detector:
         pct = lambda v: 100.0 * sum(w.words for w in windows if w.verdict == v) / total
         percent_ai, percent_gray = pct("ia"), pct("gris")
 
-        # En un trabajo escrito a medias con IA, la puntuación del documento completo se
-        # diluye, así que el veredicto global toma lo más severo entre el documento y lo
-        # marcado por fragmentos. Se exige un número mínimo de fragmentos marcados, no
-        # solo un porcentaje: en un texto corto (4 ventanas) un único falso positivo por
-        # ventana ya sería el 25% del documento. Medido sobre 213 textos humanos de test,
-        # esta regla marca como IA al 0,5% (con el porcentaje solo era el 5,2%) y sigue
-        # detectando el 99% de los textos de IA.
-        n_ia = sum(w.verdict == "ia" for w in windows)
-        n_gray = sum(w.verdict == "gris" for w in windows)
-        by_windows = ("ia" if n_ia >= 3 and percent_ai >= 25 else
-                      "gris" if n_ia >= 2 and (percent_ai >= 30 or percent_ai + percent_gray >= 40)
-                      else "humano")
-        severity = {"humano": 0, "gris": 1, "ia": 2}
-        verdict = max(veredicto_doc, by_windows, key=severity.get)
+        # En un trabajo escrito a medias con IA la puntuación del documento completo se
+        # diluye, así que el veredicto toma lo más severo entre el documento y los
+        # fragmentos.
+        by_windows = veredicto_por_fragmentos([w.verdict for w in windows],
+                                              [w.words for w in windows])
+        verdict = max(veredicto_doc, by_windows, key=SEVERIDAD.get)
         # La señal de procedencia se calcula sobre bloques de ~150 palabras, no sobre las
         # ventanas del análisis: con ventanas pequeñas el clasificador es más ruidoso por
         # fragmento y la tasa de falsos positivos sube del 7% al 53%.
