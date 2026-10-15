@@ -355,6 +355,11 @@ HTTP con la app local, así la GPU se usa una sola vez aunque haya varios client
 | `analizar_archivo` | .pdf, .docx o .txt del disco |
 | `estado` | comprueba que la app esté levantada |
 
+Se registra en el ámbito de usuario con `mcp_server/arrancar.sh`, que resuelve rutas
+absolutas, para que esté en todas las sesiones y no solo dentro de la carpeta del
+proyecto. Definirlo en los dos ámbitos a la vez provoca un aviso de conflicto en
+`claude mcp list`: conviene dejar una sola definición.
+
 Las instrucciones del servidor le dicen al asistente que esto es una señal de revisión y
 que nunca presente la salida como evidencia de plagio, porque un asistente que recibe un
 "100% marcado" tiende a redactar conclusiones más duras de lo que el dato permite.

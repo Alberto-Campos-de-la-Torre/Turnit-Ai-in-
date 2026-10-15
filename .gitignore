@@ -17,3 +17,6 @@ models/
 # Claves y configuración local
 *.env
 .env
+
+# Config local de MCP (se registra en el ámbito de usuario, ver README)
+.mcp.json
